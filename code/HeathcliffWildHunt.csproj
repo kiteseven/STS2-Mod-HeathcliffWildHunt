@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>HeathcliffWildHunt</AssemblyName>
+    <RootNamespace>HeathcliffWildHuntMod</RootNamespace>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>net9.0</TargetFramework>
+    <!-- 默认 STS2 安装路径；命令行 / IDE 已设置 Sts2Dir 时覆盖此默认值 -->
+    <Sts2Dir Condition="'$(Sts2Dir)' == ''">D:\Steam\steamapps\common\Slay the Spire 2</Sts2Dir>
+    <Sts2DataDir>$(Sts2Dir)/data_sts2_windows_x86_64</Sts2DataDir>
+
+    <!-- ===== 双版本开关（Beta 测试版 / Official 正式版）=====
+         游戏正式版上线后改了若干 API（详见 Compat/ 下的 shim）。本 mod 同时支持两套：
+           dotnet build code/HeathcliffWildHunt.csproj                       → 默认 Official，引用实时安装的正式版 sts2.dll
+           dotnet build code/HeathcliffWildHunt.csproj -p:Sts2Channel=Beta   → Beta，引用 $(Sts2BetaDll) 指向的测试版 dll
+         Official 时定义 OFFICIAL 符号；Compat/ 里的 #if OFFICIAL 据此切换接口形态。
+         Beta 路径完全等价于改造前的旧代码（shim 原样转发），保证测试版行为零回归。 -->
+    <Sts2Channel Condition="'$(Sts2Channel)' == ''">Official</Sts2Channel>
+    <!-- Beta 版 sts2.dll 路径（正式版上线后实时安装目录已是正式版，故 Beta 需单独指向一份测试版 dll，可命令行覆盖）-->
+    <Sts2BetaDll Condition="'$(Sts2BetaDll)' == ''">D:\STS2ModProject\Sts2ModPoject\.godot\mono\temp\bin\Debug\sts2.dll</Sts2BetaDll>
+  </PropertyGroup>
+
+  <!-- Official 渠道：定义 OFFICIAL 符号 + 引用实时安装的正式版 dll -->
+  <PropertyGroup Condition="'$(Sts2Channel)' == 'Official'">
+    <DefineConstants>$(DefineConstants);OFFICIAL</DefineConstants>
+    <Sts2RefDll>$(Sts2DataDir)\sts2.dll</Sts2RefDll>
+  </PropertyGroup>
+  <!-- Beta 渠道：不定义 OFFICIAL（走旧接口形态）+ 引用测试版 dll -->
+  <PropertyGroup Condition="'$(Sts2Channel)' == 'Beta'">
+    <Sts2RefDll>$(Sts2BetaDll)</Sts2RefDll>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>13.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+  </PropertyGroup>
+
+  <ItemGroup>
+
+
+    <!-- 引用按渠道切换：Official→实时安装 dll；Beta→$(Sts2BetaDll)。见上方 Sts2Channel 开关 -->
+    <Reference Include="sts2">
+      <HintPath>$(Sts2RefDll)</HintPath>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>..\..\Sts2ModPoject\_mono_referenced_assemblies\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="GodotSharp">
+      <HintPath>..\..\Sts2ModPoject\.godot\mono\temp\bin\Debug\GodotSharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+      <Optimize>false</Optimize>
+      <DebugType>portable</DebugType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+      <!-- Release 配置：开启优化、不生成 pdb -->
+      <Optimize>true</Optimize>
+      <DebugType>none</DebugType>
+  </PropertyGroup>
+
+    <Target Name="Copy Mod" AfterTargets="PostBuildEvent">
+        <Message Text="Copying mod to Slay the Spire 2 mods folder..." Importance="high"/>
+        <MakeDir Directories="$(Sts2Dir)/mods/"/>
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(Sts2Dir)/mods/$(MSBuildProjectName)/"/>
+        <!-- 新增 -->
+        <Copy SourceFiles="$(TargetDir)$(TargetName).pdb"
+              DestinationFolder="$(Sts2Dir)/mods/$(MSBuildProjectName)/"
+              Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+        <Copy SourceFiles="$(MSBuildProjectName).json" DestinationFolder="$(Sts2Dir)/mods/$(MSBuildProjectName)/"/>
+    </Target>
+    
+</Project>

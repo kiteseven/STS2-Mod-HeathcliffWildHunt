@@ -1,0 +1,10 @@
+{
+  "id": "HeathcliffWildHunt",
+  "name": "Heathcliff Wild Hunt",
+  "author": "kiteseven",
+  "description": "狂猎希斯克利夫角色 mod：12 张专属卡 + 杜拉罕形态 + 棺/理智/随从机制（参考边狱公司希斯克利夫与狂猎主题设计）。",
+  "version": "0.0.1",
+  "has_pck": true,
+  "has_dll": true,
+  "affects_gameplay": true
+}
